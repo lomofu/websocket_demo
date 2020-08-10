@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <h1>hello</h1>
+    <button onclick="sendMessage()">send message</button>
+    <input id="sendTo" />
+    <input id="message" />
+    <script>
+      if (typeof WebSocket == "undefined") {
+        alert("un support");
+      } else {
+        const userid = new Date().getTime();
+        const webUrl = `ws://localhost:9991/websocket/${userid}`;
+        const webSocket = new WebSocket(webUrl);
+
+        webSocket.onopen = () => {};
+        webSocket.onmessage = (message) => {
+          console.log(message.data);
+        };
+        function sendMessage() {
+          let sendto = document.getElementById("sendTo").value;
+          let flag = false;
+          if (sendto === "br") {
+            flag = true;
+          }
+          let msg = document.getElementById("message").value;
+          console.log(sendto, message);
+          webSocket.send(
+            JSON.stringify({
+              sendUserId: userid,
+              sentToUserId: sendto,
+              isBroadcast: flag,
+              message: msg,
+            })
+          );
+        }
+      }
+    </script>
+  </body>
+</html>
