@@ -1,44 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <title>Title</title>
-  </head>
-  <body>
-    <h1>hello</h1>
-    <button onclick="sendMessage()">send message</button>
-    <input id="sendTo" />
-    <input id="message" />
-    <script>
-      if (typeof WebSocket == "undefined") {
-        alert("un support");
-      } else {
+    <link href="node_modules/layui-src/dist/css/layui.css" rel="stylesheet"/>
+    <style>
+        body {
+            background: #F2F2F2;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-container">
+    <ul class="layui-nav">
+        <li class="layui-nav-item" id='userId'>Hello</li>
+    </ul>
+    <div class="layui-row">
+        <div class="layui-col-md8" style="padding: 10px">
+            <div class="layui-card" style="padding: 14px">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">Send To</label>
+                    <div class="layui-input-block">
+                        <input autocomplete="off" class="layui-input" id='sendto'
+                               placeholder="please input send to user id" required type="text">
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">isBroadCast</label>
+                    <div class="layui-input-block">
+                        <input id="switchFlag" lay-skin="switch" onclick="handleRadio()" style="margin-top: 10px"
+                               type="checkbox">
+                    </div>
+                </div>
+
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">Content</label>
+                    <div class="layui-input-block">
+                        <textarea class="layui-textarea" id='message' placeholder="please input message"></textarea>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" onclick="sendMessage()" type="button">
+                            send message
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="layui-col-md4" style="padding: 10px">
+            <div class="layui-card">
+                <div class="layui-card-header">当前在线人数 <strong id="sync-count">0</strong></div>
+                <div class="layui-card-body">
+                    <ul id='sync-list'>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row">
+        <div class="layui-col-md8" style="padding: 10px">
+            <div class="layui-card" style="padding: 14px">
+                <div class="layui-card-header">History Message</div>
+                <div class="layui-card-body" id="inbox" style="min-height: 200px">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="node_modules/layui-src/dist/layui.all.js"></script>
+<script>
+    const layer = layui.layer
+    let flag = false;
+    if (typeof WebSocket == "undefined") {
+        layer.msg("un support");
+    } else {
         const userid = new Date().getTime();
         const webUrl = `ws://localhost:9991/websocket/${userid}`;
         const webSocket = new WebSocket(webUrl);
 
-        webSocket.onopen = () => {};
-        webSocket.onmessage = (message) => {
-          console.log(message.data);
+        webSocket.onopen = () => {
+            const userDom = document.getElementById('userId')
+            userDom.innerHTML = `Hello your ID is : ${userid}`
+            layer.msg("connect success!")
         };
+
+        webSocket.onmessage = (message) => {
+            const result = JSON.parse(message.data);
+            if (result.type === 'sync') {
+                const {count, list} = result;
+                document.getElementById("sync-count").innerText = count;
+                const list_view = document.getElementById("sync-list");
+
+                list_view.innerHTML = '';
+                list.map(e => e == userid ? 'Me' : e)
+                    .map(v => `<li>${v}</li>`)
+                    .forEach(e => list_view.innerHTML += e);
+
+            } else {
+                const {from, msg} = result
+                const dom = document.getElementById('inbox');
+                debugger
+                if (from != userid){
+                    dom.innerHTML += `<p> ${from} -> ${msg}</p>`
+                }
+            }
+
+        };
+
+        webSocket.onclose = () => layer.msg('connection close');
+
         function sendMessage() {
-          let sendto = document.getElementById("sendTo").value;
-          let flag = false;
-          if (sendto === "br") {
-            flag = true;
-          }
-          let msg = document.getElementById("message").value;
-          console.log(sendto, message);
-          webSocket.send(
-            JSON.stringify({
-              sendUserId: userid,
-              sentToUserId: sendto,
-              isBroadcast: flag,
-              message: msg,
-            })
-          );
+            let sendto = document.getElementById("sendto").value;
+            let msg = document.getElementById("message").value;
+            webSocket.send(
+                JSON.stringify({
+                    sendUserId: userid,
+                    sentToUserId: sendto,
+                    broadcast: flag,
+                    message: msg,
+                }),
+            );
+            const dom = document.getElementById('inbox');
+            dom.innerHTML += `<p> me -> ${msg}</p>`
         }
-      }
-    </script>
-  </body>
+
+        function handleRadio() {
+            flag = !flag;
+            if (flag) {
+                document.getElementById("sendto").value = '';
+            }
+        }
+    }
+</script>
+</body>
 </html>

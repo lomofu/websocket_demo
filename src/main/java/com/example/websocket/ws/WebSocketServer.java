@@ -1,7 +1,9 @@
 package com.example.websocket.ws;
 
-import com.alibaba.fastjson.JSON;
 import com.example.websocket.dto.ClientDto;
+import com.example.websocket.dto.MessageInfo;
+import com.example.websocket.dto.ServerInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -13,8 +15,8 @@ import javax.websocket.Session;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -22,7 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ServerEndpoint("/websocket/{id}")
 public class WebSocketServer {
     private static final AtomicInteger atomicInteger = new AtomicInteger();
+
     private static final ConcurrentHashMap<String, Session> concurrentHashMap = new ConcurrentHashMap<>();
+
     private final Logger log = LoggerFactory.getLogger(WebSocketServer.class);
 
     private static void addUser() {
@@ -62,23 +66,42 @@ public class WebSocketServer {
         addUser();
         concurrentHashMap.put(id, session);
         log.info("new client is coming {},now have {} user", id, getUser());
-        sendMessage(session, UUID.randomUUID().toString());
+        broadcast(updateUserList());
     }
 
     @OnMessage
     public void OnMessage(String message) throws IOException {
-        ClientDto clientDto = Optional.ofNullable(JSON.parseObject(message,ClientDto.class))
-                .orElseThrow(() -> new RuntimeException("null objeceadt"));
+        ObjectMapper objectMapper = new ObjectMapper();
+        ClientDto clientDto = Optional.ofNullable(objectMapper.readValue(message, ClientDto.class))
+                .orElseThrow(() -> new RuntimeException("null object created!"));
+        String json = objectMapper.writeValueAsString(
+                MessageInfo
+                        .builder()
+                        .from(clientDto.getSendUserId())
+                        .msg(clientDto.getMessage()).build());
         if (clientDto.isBroadcast()) {
-            broadcast(clientDto.getMessage());
+            broadcast(json);
         } else {
-            p2p(clientDto.getSentToUserId(), clientDto.getMessage());
+            p2p(clientDto.getSentToUserId(), json);
         }
     }
 
     @OnClose
-    public void OnClose(Session session, @PathParam("id") String id) {
+    public void OnClose(@PathParam("id") String id) throws IOException {
         subUser();
-        log.info("the connect is close,{} is close u", id);
+        concurrentHashMap.remove(id);
+        broadcast(updateUserList());
     }
+
+
+    private String updateUserList() throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writeValueAsString(
+                ServerInfo
+                        .builder()
+                        .count(concurrentHashMap.size())
+                        .list(new ArrayList<>(concurrentHashMap.keySet()))
+                        .build());
+    }
+
 }

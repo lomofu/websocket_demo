@@ -1,2 +1,0 @@
-com/example/websocket/WebsocketApplicationTests.java
- com.example.websocket.WebsocketApplicationTests
