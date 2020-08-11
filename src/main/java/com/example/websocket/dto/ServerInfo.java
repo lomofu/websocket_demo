@@ -8,48 +8,47 @@ import java.util.List;
  * @create 11/Aug/2020 01:18
  */
 public class ServerInfo {
+  private final String type = "sync";
+  private final int count;
+  private final List<String> list;
+
+  public ServerInfo(Builder builder) {
+    this.count = builder.count;
+    this.list = builder.list;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public int getCount() {
+    return count;
+  }
+
+  public List<String> getList() {
+    return list;
+  }
+
+  public static class Builder {
     private int count;
     private List<String> list;
-    private final String type = "sync";
 
-    public ServerInfo(Builder builder) {
-        this.count = builder.count;
-        this.list = builder.list;
+    public Builder count(int count) {
+      this.count = count;
+      return this;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public Builder list(List<String> list) {
+      this.list = list;
+      return this;
     }
 
-    public String getType() {
-        return type;
+    public ServerInfo build() {
+      return new ServerInfo(this);
     }
-
-    public int getCount() {
-        return count;
-    }
-
-    public List<String> getList() {
-        return list;
-    }
-
-    public static class Builder {
-        private int count;
-        private List<String> list;
-
-        public Builder count(int count) {
-            this.count = count;
-            return this;
-        }
-
-        public Builder list(List<String> list) {
-            this.list = list;
-            return this;
-        }
-
-        public ServerInfo build() {
-            return new ServerInfo(this);
-        }
-
-    }
+  }
 }

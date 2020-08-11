@@ -9,6 +9,7 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
 
 repositories {
+    mavenLocal()
     maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
     mavenCentral()
 }
@@ -18,7 +19,7 @@ dependencies {
     testImplementation('org.springframework.boot:spring-boot-starter-test') {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
-//    compile 'com.google.code.gson:gson:2.8.5'
+    compile 'com.google.code.gson:gson:2.8.5'
 }
 
 test {
